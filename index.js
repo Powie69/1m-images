@@ -1,12 +1,19 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const session = require('express-session')
+const session = require('express-session');
 const multer = require('multer');
+const compression = require('compression');
 const mysql = require('mysql2');
 const MySQLStore = require('express-mysql-session')(session);
-require('dotenv').config()
+require('dotenv').config();
 
 const app = express();
+const upload = multer({ dest: 'uploads/' })
+app.disable('x-powered-by');
+app.use(compression());
+
+app.use(express.static('public'));
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -16,8 +23,8 @@ const sessionStore = new MySQLStore({
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
 	clearExpired: true,
-	checkExpirationInterval: 1209600000, // 2 wekks
-	expiration: 2419200000, // 4 weeks
+	checkExpirationInterval: 3800000, // 2 wekks
+	expiration: 3600000,
 	createDatabaseTable: false
 });
 
@@ -41,7 +48,7 @@ app.use(
 		saveUninitialized: false,
 		store: sessionStore,
 		cookie: {
-			maxAge: 1000 * 60 * 60,
+			maxAge: 3600000,
 			httpOnly: true,
 			sameSite: 'strict'
     	},
@@ -56,6 +63,13 @@ app.get('/debug', (req,res) => {
 	req.session.ball = "test";
 	res.send("helo")
 	console.log(req.session);
+})
+
+app.post('/upload', upload.single('image'),(req,res) => {
+	console.log(req.file);
+	const data = req.body
+	console.log(data);
+	res.send(req.file)
 })
 
 app.listen(process.env.SERVER_PORT, () => {
